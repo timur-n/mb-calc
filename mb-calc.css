@@ -1,0 +1,70 @@
+.mb-calc__container {
+    height: 100%;
+}
+
+/* Odds */
+.mb-calc__back-odds-container {
+    background: lightblue;
+}
+
+.mb-calc__lay-odds-container {
+    background: lightpink;
+}
+
+.mb-calc__back-odds-container,
+.mb-calc__lay-odds-container {
+    width: 70px;
+    height: 60px;
+    padding: 0 10px;
+}
+
+.mb-calc__back-odds,
+.mb-calc__lay-odds {
+    margin-bottom: 0 !important;
+}
+
+
+/* Commission */
+.mb-calc__commission-container {
+    height: 60px;
+    padding: 0 10px;
+}
+.mb-calc__commission-label {
+    padding: 6px 0 0;
+    font-size: 12px;
+}
+.mb-calc__commission {
+    width: 50px;
+    margin: 0 !important;
+}
+
+
+/* Stake */
+.mb-calc__stake-container {
+    height: 60px;
+    padding: 0 10px;
+}
+.mb-calc__stake {
+    width: 60px;
+}
+
+
+/**/
+.mb-calc__table-container {
+    overflow-y: auto;
+}
+.mb-calc__table {
+    width: 100%;
+}
+.mb-calc__col1,
+.mb-calc__col2,
+.mb-calc__col3,
+.mb-calc__col4 {
+    width: 25%;
+    border: 1px solid silver;
+}
+
+
+.md-button {
+    margin: 0 !important;
+}

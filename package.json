@@ -8,8 +8,10 @@
     "start": "electron ."
   },
   "author": "",
-  "license": "ISC",
+  "license": "",
   "devDependencies": {
-    "electron": "^2.0.2"
+    "devtron": "^1.4.0",
+    "electron": "^2.0.2",
+    "electron-debug": "^2.0.0"
   }
 }
