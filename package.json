@@ -4,7 +4,7 @@
   "description": "Lay odds calculator",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "karma start test/karma.conf.js",
     "start": "electron ."
   },
   "author": "",
@@ -12,6 +12,11 @@
   "devDependencies": {
     "devtron": "^1.4.0",
     "electron": "^2.0.2",
-    "electron-debug": "^2.0.0"
-  }
+    "electron-debug": "^2.0.0",
+    "jasmine": "^3.1.0",
+    "karma": "^2.0.4",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-jasmine": "^1.1.2"
+  },
+  "dependencies": {}
 }

@@ -49,19 +49,43 @@
 }
 
 
-/**/
+/* Table */
 .mb-calc__table-container {
     overflow-y: auto;
 }
 .mb-calc__table {
+    margin-top: 10px;
     width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
 }
-.mb-calc__col1,
-.mb-calc__col2,
-.mb-calc__col3,
+.mb-calc__table td, .mb-calc__table th {
+    border: 1px solid silver;
+}
+.mb-calc__col1 {
+    width: 15%;
+}
+.mb-calc__col2 {
+    width: 30%;
+}
+.mb-calc__col3 {
+    width: 15%;
+}
 .mb-calc__col4 {
     width: 25%;
-    border: 1px solid silver;
+}
+.mb-calc__row--selected {
+    font-weight: bold;
+}
+.mb-calc__row--profit {
+    background-color: lightgreen;
+}
+.mb-calc__row--loss {
+    background-color: lightpink;
+}
+.mb-calc__col3--selected {
+    font-size: 14px;
+    background: lightblue;
 }
 
 
