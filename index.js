@@ -7,7 +7,7 @@ try {
     require('electron-debug')();
 } catch (e) {}
 
-function createWindow() {
+app.on('ready', () => {
     // Create the browser window.
     const win = new BrowserWindow({
         width: 350,
@@ -19,6 +19,8 @@ function createWindow() {
     win.setVisibleOnAllWorkspaces(true);
     win.setFullScreenable(false);
     win.loadFile('index.html');
-}
+});
 
-app.on('ready', createWindow);
+app.on('window-all-closed', () => {
+    app.quit();
+});
