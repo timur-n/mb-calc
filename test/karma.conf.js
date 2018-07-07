@@ -10,6 +10,7 @@ module.exports = function(config) {
             "lib/angular-messages.min.js",
             "lib/angular-material.js",
             "test/angular-mocks.js",
+            "mb-calc.js",
             "test/*.spec.js",
         ]
     });

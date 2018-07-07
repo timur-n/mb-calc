@@ -2,89 +2,17 @@ angular
     .module("mb-calc", [
         "ngMaterial",
     ])
+    .service("mbClipboard", function() {
+        this.copy = text => {
+            const {
+                clipboard
+            } = require('electron');
+            clipboard.writeText(text + '');
+        };
+    })
     .component("mbCalc", {
-        template: `
-<div layout="column" class="mb-calc__container">
-    <md-tabs>
-        <md-tab>Test1</md-tab>
-        <md-tab>+</md-tab>
-    </md-tabs>
-    <div layout="row">
-        <div class="mb-calc__back-odds-container">
-            <md-input-container class="mb-calc__back-odds">
-                <label>Back odds</label>
-                <input type="number" ng-model="$ctrl.backOdds" ng-change="$ctrl.recalculate()">
-            </md-input-container>
-        </div>
-        <div class="mb-calc__lay-odds-container">
-            <md-input-container>
-                <label>Lay odds</label>
-                <input type="number" ng-model="$ctrl.layOdds" ng-change="$ctrl.recalculate()">
-            </md-input-container>
-        </div>
-        <div class="mb-calc__commission-container" flex>
-            <div class="mb-calc__commission-label">Commission</div>
-            <div layout="row" layout-align="space-between center">
-                <md-button ng-repeat="commission in $ctrl.commissions"
-                    class="md-icon-button md-raised"
-                    ng-class="{'md-primary': $ctrl.commission===commission}"
-                    ng-click="$ctrl.updateCommission(commission)"
-                >
-                    {{commission}}%
-                </md-button>
-                <md-input-container class="mb-calc__commission">
-                    <input type="number" min="0" ng-model="$ctrl.commission" ng-change="$ctrl.recalculate()">
-                </md-input-container>
-            </div>
-        </div>
-    </div>
-    <div class="mb-calc__stake-container" layout="row" layout-align="space-between center">
-        <span>Stake</span>
-        <md-button ng-repeat="stake in $ctrl.stakes"
-            class="md-icon-button md-raised"
-            ng-class="{'md-primary': $ctrl.stake===stake}"
-            ng-click="$ctrl.updateStake(stake)"
-        >
-            {{stake}}
-        </md-button>
-        <md-input-container class="mb-calc__stake">
-            <input type="number" min="0" ng-model="$ctrl.stake" ng-change="$ctrl.recalculate()">
-        </md-input-container>
-    </div>
-    <div layout="row" layout-align="space-between center">
-        <md-button flex="50%" class="md-raised" ng-class="{'md-primary': !$ctrl.isFreebet}" ng-click="$ctrl.setFreebet(false)">Qualifier</md-button>
-        <md-button flex class="md-raised" ng-class="{'md-warn': $ctrl.isFreebet}" ng-click="$ctrl.setFreebet(true)">Free SNR</md-button>
-    </div>
-    <div flex class="mb-calc__table-container" layout="row">
-        <div flex>
-            <table class="mb-calc__table" flex>
-                <thead>
-                    <th class="mb-calc__col1">Lay odds</th>
-                    <th class="mb-calc__col2">Profit</th>
-                    <th class="mb-calc__col3">Lay stake</th>
-                    <th class="mb-calc__col4">Liability</th>
-                </thead>
-                <tbody>
-                    <tr ng-repeat="result in $ctrl.results"
-                        ng-class="{'mb-calc__row--selected': result.isCurrent, 'mb-calc__row--profit': result.isProfit, 'mb-calc__row--loss': !result.isProfit}"
-                        ng-click="$ctrl.select(result)"
-                    >
-                        <td class="mb-calc__col1">{{result.layOdds}}</td>
-                        <td class="mb-calc__col2">{{result.profit}}{{result.profitDetails}}</td>
-                        <td class="mb-calc__col3" ng-class="{'mb-calc__col3--selected': result.isCurrent}">{{result.layStake}}</td>
-                        <td class="mb-calc__col4">{{result.liability}}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div layout="column" style="display:none;">
-            <md-button ng-repeat="step in $ctrl.steps" class="md-icon-button md-raised">
-                {{step}}
-            </md-button>
-        </div>
-    </div>
-</div>`,
-        controller: function($mdToast) {
+        templateUrl: './mb-calc.html',
+        controller: function($mdToast, mbClipboard) {
             this.backOdds = 2.0;
             this.layOdds = 3.0;
             this.commission = 2;
@@ -93,11 +21,8 @@ angular
             this.commissions = [0, 2, 5];
             this.stakes = [5, 10, 20, 25, 50, 100];
             this.steps = [0.01, 0.05, 0.1, 0.5, 1];
-
-            this.updateStep = step => {
-                this.step = step;
-            }
-            this.updateStep(0.1);
+            this.tabs = [];
+            this.selectedTab = 0;
 
             const fix = number => Math.round(number * 100) / 100;
 
@@ -178,9 +103,9 @@ angular
                     return 0.01;
                 } else if (odds >= 3 && odds < 4) {
                     return 0.05;
-                } else if (odds >= 4 && odds < 5) {
+                } else if (odds >= 4 && odds < 6) {
                     return 0.1;
-                } else if (odds >= 5 && odds < 10) {
+                } else if (odds >= 6 && odds < 10) {
                     return 0.2;
                 } else if (odds >= 10 && odds < 20) {
                     return 0.5;
@@ -209,12 +134,49 @@ angular
             };
 
             this.getOddsTable = (odds, rowCount) => {
-                let result = [this.layOdds];
+                let result = [odds];
                 result = result
                     .concat(getOdds(odds, -1, rowCount / 2))
                     .concat(getOdds(odds, 1, rowCount / 2))
                     .sort((a, b) => a - b);
                 return result;
+            };
+
+            const swap = (source, dest) => {
+                dest.backOdds = source.backOdds;
+                dest.layOdds = source.layOdds;
+                dest.commission = source.commission;
+                dest.stake = source.stake;
+                dest.isFreebet = source.isFreebet;
+            }
+
+            this.addTab = () => {
+                const defaultTab = {
+                    backOdds: 2,
+                    layOdds: 3,
+                    commission: 2,
+                    stake: 5,
+                    isFreebet: false,
+                };
+                this.tabs.push(defaultTab);
+                this.selectTab(this.tabs[this.tabs.length - 1]);
+            };
+
+            this.removeTab = (tab, event) => {
+                if (!event || (event && event.which === 3)) {
+                    const i = this.tabs.indexOf(tab);
+                    if (i >= 0 && this.tabs.length > 1) {
+                        this.selectedTab = this.selectedTab ? this.selectedTab - 1 : 0;
+                        this.tabs.splice(i, 1);
+                    }
+                }
+            };
+
+            this.getTabLabel = tab => `${tab.stake}@${tab.backOdds}/${tab.layOdds}`;
+
+            this.selectTab = tab => {
+                swap(tab, this);
+                this.recalculate();
             };
 
             this.recalculate = () => {
@@ -223,11 +185,15 @@ angular
                 for (let i = 0; i < oddsTable.length; i += 1) {
                     const result = calc(this.backOdds, oddsTable[i], this.stake, this.commission, this.isFreebet);
                     result.isCurrent = result.layOdds === this.layOdds;
+                    if (result.isCurrent) {
+                        this.layStake = result.layStake;
+                    }
                     this.results.push(result);
                 }
                 // todo: change input step
+                const tab = this.tabs[this.selectedTab];
+                swap(this, tab);
             };
-            this.recalculate();
 
             this.updateCommission = commission => {
                 this.commission = commission;
@@ -245,13 +211,18 @@ angular
             }
 
             this.select = result => {
-                const {
-                    clipboard
-                } = require('electron');
-                clipboard.writeText("" + result.layStake);
+                mbClipboard.copy(result.layStake);
                 this.layOdds = result.layOdds;
                 this.recalculate();
-                $mdToast.showSimple("Copied " + result.layStake);
+                $mdToast.showSimple(`Copied ${result.layStake}`);
             };
+
+            this.copyDetails = () => {
+                const line = `${this.stake}\t${this.backOdds}\t${this.layOdds}\t${this.layStake}\t${this.commission}`;
+                mbClipboard.copy(line);
+                $mdToast.showSimple('Current details copied');
+            };
+
+            this.addTab();
         }
     });

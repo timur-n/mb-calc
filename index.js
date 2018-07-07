@@ -3,13 +3,15 @@ const {
     BrowserWindow
 } = require('electron');
 
-require('electron-debug')();
+try {
+    require('electron-debug')();
+} catch (e) {}
 
 function createWindow() {
     // Create the browser window.
     const win = new BrowserWindow({
-        width: 330,
-        height: 500
+        width: 350,
+        height: 480
     });
     // and load the index.html of the app.
     win.setMenu(null);

@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "karma start test/karma.conf.js",
+    "bundle": "electron-packager . --overwrite",
     "start": "electron ."
   },
   "author": "",
@@ -13,6 +14,7 @@
     "devtron": "^1.4.0",
     "electron": "^2.0.2",
     "electron-debug": "^2.0.0",
+    "electron-packager": "^12.1.0",
     "jasmine": "^3.1.0",
     "karma": "^2.0.4",
     "karma-chrome-launcher": "^2.2.0",

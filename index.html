@@ -11,8 +11,20 @@
     <link rel="stylesheet" type="text/css" href="mb-calc.css"/>
 </head>
 
-<body ng-app="mb-calc">
+<body ng-app="app">
     <mb-calc></mb-calc>
-</body>
 
+<script>
+angular.module('app', ['ngMaterial', 'mb-calc'])
+    .config(function($mdThemingProvider, $mdIconProvider) {
+        $mdThemingProvider.theme('default')
+            .warnPalette('green')
+            .accentPalette('indigo');
+        $mdIconProvider
+            .icon('copy', 'style/copy.svg')
+            .icon('add', 'style/add.svg');
+    });
+</script>
+
+</body>
 </html>
