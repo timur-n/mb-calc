@@ -99,8 +99,10 @@ angular
             };
 
             const getStep = odds => {
-                if (odds < 3) {
+                if (odds < 2) {
                     return 0.01;
+                } else if (odds >= 2 && odds < 3) {
+                    return 0.02;
                 } else if (odds >= 3 && odds < 4) {
                     return 0.05;
                 } else if (odds >= 4 && odds < 6) {
