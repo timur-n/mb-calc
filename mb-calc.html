@@ -2,7 +2,7 @@
     <div layout="row">
         <md-tabs flex class="" md-selected="$ctrl.selectedTab">
             <md-tab ng-repeat="tab in $ctrl.tabs" md-on-select="$ctrl.selectTab(tab)">
-                <span ng-class="{'mb-calc__tab--fb': tab.isFreebet}" ng-mousedown="$ctrl.removeTab(tab, $event)">{{$ctrl.getTabLabel(tab)}}</span>
+                <span ng-class="{'mb-calc__tab--fb': tab.isFreebet}" ng-mousedown="$ctrl.removeTab(tab, $event)">{{tab.stake}}<span class="mb-calc__tab-sep">@</span>{{tab.backOdds}}</span>
             </md-tab>
             <md-tab ng-click="$ctrl.addTab()">
                 <md-icon md-svg-icon="add"></md-icon>
