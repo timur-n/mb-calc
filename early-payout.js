@@ -43,10 +43,11 @@ export interface EarlyPayoutOutput {
   totalProfitLay: number;
 }
 */
+(function() {
 const round = (n/*: number*/, d = 2)/* : number */ =>
   Math.round(n * 10 ** d) / 10 ** d;
 
-export function calculateEarlyPayout(
+window.calculateEarlyPayout = function calculateEarlyPayout(
   input/* : EarlyPayoutInput */
 )/* : EarlyPayoutOutput */ {
   const {
@@ -158,3 +159,4 @@ export function calculateEarlyPayout(
     totalProfitLay
   };
 }
+})();

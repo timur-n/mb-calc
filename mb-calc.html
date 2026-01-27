@@ -54,7 +54,7 @@
         <md-button flex class="md-raised" ng-class="{'md-warn': $ctrl.isFreebet()}" ng-click="$ctrl.setMode('freebet')">Free SNR</md-button>
         <md-button flex class="md-raised" ng-class="{'md-accent': $ctrl.isEarlyPayout()}" ng-click="$ctrl.setMode('earlyPayout')">Early payout</md-button>
     </div>
-    <div flex class="mb-calc__table-container" layout="row">
+    <div flex class="mb-calc__table-container" layout="row" ng-if="!$ctrl.isEarlyPayout()">
         <div flex>
             <table class="mb-calc__table" flex>
                 <thead>
@@ -81,10 +81,50 @@
                 <span class="mb-calc__copy-stake-label">Lay stake for copy:</span><input class="mb-calc__copy-stake" type="text" ng-value="$ctrl.layStake" />
             </div>
         </div>
-        <div layout="column" style="display:none;">
-            <md-button ng-repeat="step in $ctrl.steps" class="md-icon-button md-raised">
-                {{step}}
+    </div>
+    <div flex class="mb-calc__table-container" ng-if="$ctrl.isEarlyPayout()">
+        <div class="mb-calc__early-payout-inputs" layout="row" layout-align="start center">
+            <div class="mb-calc__back-odds-container">
+                <md-input-container class="mb-calc__back-odds">
+                    <label>Back odds</label>
+                    <input type="number" min="1" ng-model="$ctrl.inplayBackOdds" step="0.01" ng-change="$ctrl.recalculate()">
+                </md-input-container>
+            </div>
+            <div class="mb-calc__early-payout-lockin-container">
+                <md-input-container class="mb-calc__early-payout-lock">
+                    <label>Lock %</label>
+                    <input type="number" min="0" max="100" ng-model="$ctrl.earlyPayoutLockin" step="1" ng-change="$ctrl.recalculate()">
+                </md-input-container>
+            </div>
+            <md-button ng-repeat="lockin in $ctrl.lockins"
+                class="md-icon-button md-raised"
+                ng-class="{'md-primary': $ctrl.earlyPayoutLockin===lockin}"
+                ng-click="$ctrl.updateLockin(lockin)"
+            >
+                {{lockin}}
             </md-button>
+        </div>
+        <div flex>
+            <table class="mb-calc__table" flex>
+                <thead>
+                    <th class="mb-calc__col1">Back odds</th>
+                    <th class="mb-calc__col2">Profit/loss</th>
+                    <th class="mb-calc__col3">Back stake</th>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="result in $ctrl.results"
+                        ng-class="{'mb-calc__row--selected': result.isCurrent, 'mb-calc__row--profit': result.isProfit, 'mb-calc__row--loss': !result.isProfit}"
+                        ng-click="$ctrl.selectEarlyPayout(result)"
+                    >
+                        <td class="mb-calc__col1">{{result.paidOutBackOdds}}</td>
+                        <td class="mb-calc__col2">{{result.totalProfitBack}}</td>
+                        <td class="mb-calc__col3" ng-class="{'mb-calc__col3--selected': result.isCurrent}">{{result.paidOutBackStake}}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div layout="row" layout-align="space-between center">
+                <span class="mb-calc__copy-stake-label">Back stake for copy:</span><input class="mb-calc__copy-stake" type="text" ng-value="$ctrl.backStake" />
+            </div>
         </div>
     </div>
     <div class="mb-calc__copy">

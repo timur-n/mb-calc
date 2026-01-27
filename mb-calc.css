@@ -23,7 +23,8 @@
 }
 
 .mb-calc__back-odds-container,
-.mb-calc__lay-odds-container {
+.mb-calc__lay-odds-container,
+.mb-calc__early-payout-lockin-container {
     width: 70px;
     height: 60px;
 }

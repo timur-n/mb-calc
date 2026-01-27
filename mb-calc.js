@@ -19,6 +19,7 @@ angular
             this.stakes = [5, 10, 20, 25, 50, 100];
             this.tabs = [];
             this.selectedTab = 0;
+            this.lockins = ['0%', '100%', 'EV']
 
             const fix = number => Math.round(number * 100) / 100;
 
@@ -28,6 +29,8 @@ angular
                 commission: 2,
                 stake: 5,
                 mode: 'qualifier',
+                inplayBackOdds: 1.2,
+                earlyPayoutLockin: 100,
             };
 
             this.$onInit = () => {
@@ -170,6 +173,8 @@ angular
                 dest.commission = source.commission;
                 dest.stake = source.stake;
                 dest.mode = source.mode;
+                dest.inplayBackOdds = source.inplayBackOdds;
+                dest.earlyPayoutLockin = source.earlyPayoutLockin;
             }
 
             this.addTab = () => {
@@ -199,17 +204,35 @@ angular
                 // A glitch happens when we go down from 3 - it calculates the step as 0.05 and the next odds become 2.95, 
                 // which ruins the whole thing because we get another recalculate() from somewhere with backOdds or layOdds suddenly undefined.
                 // Currently I don't understand why, but this monkey patch fixes it.
-/*                 if (this.backOdds === undefined) {
+/*                 
+                if (this.backOdds === undefined) {
                     this.backOdds = 2.98;
                 }
                 if (this.layOdds === undefined) {
                     this.layOdds = 2.98;
                 }
  */             
+                this.results = [];
                 if (this.isEarlyPayout()) {
-
+                    const oddsTable = this.getOddsTable(this.inplayBackOdds, 10);
+                    for (let i = 0; i < oddsTable.length; i += 1) {
+                        const result = calculateEarlyPayout({
+                            backStake: this.stake,
+                            backOdds: this.backOdds,
+                            layOdds: this.layOdds,
+                            layCommission: this.commission,
+                            isPaidOut: true,
+                            paidOutBackOdds: oddsTable[i],
+                            lockinPercentage: this.earlyPayoutLockin / 100
+                        });
+                        result.isCurrent = i === 5;
+                        result.paidOutBackOdds = oddsTable[i];
+                        if (result.isCurrent) {
+                            this.backStake = result.backStake;
+                        }
+                        this.results.push(result)
+                    }
                 } else {
-                    this.results = [];
                     const oddsTable = this.getOddsTable(this.layOdds, 10);
                     for (let i = 0; i < oddsTable.length; i += 1) {
                         const result = calc(this.backOdds, oddsTable[i], this.stake, this.commission, this.isFreebet());
@@ -223,12 +246,14 @@ angular
                     // it jumps over one step when going down (because we don't know the direction):
                     // E.g. getStep(4) returns 0.1, but actually if we are going down the next value should be 3.95, not 3.9 which it currently sets.
                     // But can live with that for now.
-    /*                 this.backStep = getStep(this.backOdds);
+    /*              
+                    this.backStep = getStep(this.backOdds);
                     this.layStep = getStep(this.layOdds);
     */
-                    const tab = this.tabs[this.selectedTab];
-                    swap(this, tab);
                 }
+                // Save results to the current tab
+                const tab = this.tabs[this.selectedTab];
+                swap(this, tab);
             };
 
             this.updateCommission = commission => {
@@ -257,6 +282,13 @@ angular
                 this.layOdds = result.layOdds;
                 this.recalculate();
                 $mdToast.showSimple(`Copied ${result.layStake}`);
+            };
+
+            this.selectEarlyPayout = result => {
+                mbClipboard.copy(result.paidOutBackStake);
+                this.inplayBackOdds = result.paidOutBackOdds;
+                this.recalculate();
+                $mdToast.showSimple(`Copied ${result.paidOutBackStake}`);
             };
 
             this.copyDetails = () => {
