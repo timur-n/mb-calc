@@ -2,29 +2,46 @@ angular
     .module("mb-calc", [
         "ngMaterial",
     ])
-    .service("mbClipboard", function() {
+    .service("mbClipboard", function () {
         this.copy = text => {
-            const {
-                clipboard
-            } = require('electron');
-            clipboard.writeText(text + '');
+            window.electronAPI.copyText(text + '');
         };
     })
     .component("mbCalc", {
         templateUrl: './mb-calc.html',
-        controller: function($mdToast, mbClipboard) {
-            this.backOdds = 2.0;
-            this.layOdds = 3.0;
+        controller: function ($mdToast, mbClipboard, $scope) {
+            this.backOdds = 2;
+            this.layOdds = 3;
             this.commission = 2;
-            this.isFreebet = false;
+            this.mode = 'qualifier'
             this.stake = 5;
             this.commissions = [0, 2, 5];
             this.stakes = [5, 10, 20, 25, 50, 100];
-            this.steps = [0.01, 0.05, 0.1, 0.5, 1];
             this.tabs = [];
             this.selectedTab = 0;
 
             const fix = number => Math.round(number * 100) / 100;
+
+            const defaultTab = {
+                backOdds: 2.8,
+                layOdds: 3,
+                commission: 2,
+                stake: 5,
+                mode: 'qualifier',
+            };
+
+            this.$onInit = () => {
+                window.electronAPI.onPostData((event, data) => {
+                    console.log('Received from network:', data);
+                    this.backOdds = data.backOdds;
+                    this.layOdds = data.layOdds;
+                    this.commission = data.commission ?? this.commission;
+                    this.stake = data.stake ?? this.stake;
+                    this.recalculate();
+                    $mdToast.showSimple(`Got new odds: ${data.backOdds} / ${data.layOdds}`);
+                    $scope.$apply();
+                });
+            };
 
             this.calcQualifier = (backOdds, layOdds, backStake, layCommission, size) => {
                 const layCommissionPc = layCommission / 100
@@ -32,6 +49,7 @@ angular
                 const result = {
                     backStake: backStake,
                     profit: NaN,
+                    profitPc: NaN,
                     isProfit: false,
                     layOdds: layOdds,
                     valid: true
@@ -54,6 +72,7 @@ angular
                 result.isProfit = result.lostProfit >= 0;
                 result.isOk = !result.isProfit && (Math.abs(result.lostProfit) / backStake < 0.1);
                 result.enough = size * 1.0 >= result.layStake;
+                result.profitPc = fix(result.profit / backStake * 100);
 
                 return result;
             };
@@ -63,6 +82,7 @@ angular
                 const result = {
                     backStake: backStake,
                     profit: NaN,
+                    profitPc: NaN,
                     isProfit: false,
                     layOdds: layOdds,
                     valid: true
@@ -81,7 +101,7 @@ angular
                 result.backProfit = backReturnSNR - result.liability;
                 result.layProfit = result.layStake * (1 - layCommissionPc);
                 result.profit = fix(result.backProfit);
-                result.profitDetails = " (" + fix(result.profit / backStake * 100) + "%)";
+                result.profitPc = fix(result.profit / backStake * 100);
 
                 result.isProfit = true;
                 result.isOk = false;
@@ -149,18 +169,11 @@ angular
                 dest.layOdds = source.layOdds;
                 dest.commission = source.commission;
                 dest.stake = source.stake;
-                dest.isFreebet = source.isFreebet;
+                dest.mode = source.mode;
             }
 
             this.addTab = () => {
-                const defaultTab = {
-                    backOdds: 2,
-                    layOdds: 3,
-                    commission: 2,
-                    stake: 5,
-                    isFreebet: false,
-                };
-                this.tabs.push(defaultTab);
+                this.tabs.push({ ...defaultTab });
                 this.selectTab(this.tabs[this.tabs.length - 1]);
             };
 
@@ -182,19 +195,40 @@ angular
             };
 
             this.recalculate = () => {
-                this.results = [];
-                const oddsTable = this.getOddsTable(this.layOdds, 10);
-                for (let i = 0; i < oddsTable.length; i += 1) {
-                    const result = calc(this.backOdds, oddsTable[i], this.stake, this.commission, this.isFreebet);
-                    result.isCurrent = result.layOdds === this.layOdds;
-                    if (result.isCurrent) {
-                        this.layStake = result.layStake;
-                    }
-                    this.results.push(result);
+                // Tried to change the inputs step according to the odds, but it doesn't work very well:
+                // A glitch happens when we go down from 3 - it calculates the step as 0.05 and the next odds become 2.95, 
+                // which ruins the whole thing because we get another recalculate() from somewhere with backOdds or layOdds suddenly undefined.
+                // Currently I don't understand why, but this monkey patch fixes it.
+/*                 if (this.backOdds === undefined) {
+                    this.backOdds = 2.98;
                 }
-                // todo: change input step
-                const tab = this.tabs[this.selectedTab];
-                swap(this, tab);
+                if (this.layOdds === undefined) {
+                    this.layOdds = 2.98;
+                }
+ */             
+                if (this.isEarlyPayout()) {
+
+                } else {
+                    this.results = [];
+                    const oddsTable = this.getOddsTable(this.layOdds, 10);
+                    for (let i = 0; i < oddsTable.length; i += 1) {
+                        const result = calc(this.backOdds, oddsTable[i], this.stake, this.commission, this.isFreebet());
+                        result.isCurrent = result.layOdds === this.layOdds;
+                        if (result.isCurrent) {
+                            this.layStake = result.layStake;
+                        }
+                        this.results.push(result);
+                    }
+                    // Change the odds input step according to current odds,
+                    // it jumps over one step when going down (because we don't know the direction):
+                    // E.g. getStep(4) returns 0.1, but actually if we are going down the next value should be 3.95, not 3.9 which it currently sets.
+                    // But can live with that for now.
+    /*                 this.backStep = getStep(this.backOdds);
+                    this.layStep = getStep(this.layOdds);
+    */
+                    const tab = this.tabs[this.selectedTab];
+                    swap(this, tab);
+                }
             };
 
             this.updateCommission = commission => {
@@ -207,8 +241,14 @@ angular
                 this.recalculate();
             }
 
-            this.setFreebet = isFreebet => {
-                this.isFreebet = isFreebet;
+            this.isFreebet = () => this.mode === 'freebet';
+
+            this.isQualifier = () => this.mode === 'qualifier';
+
+            this.isEarlyPayout = () => this.mode === 'earlyPayout';
+
+            this.setMode = mode => {
+                this.mode = mode;
                 this.recalculate();
             }
 
