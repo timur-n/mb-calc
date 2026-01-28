@@ -24,10 +24,6 @@ angular
                 { text: 'Max', value: 100 },
                 { text:'EV', value: undefined },
             ]
-            this.earlyPayoutPartBacks = [
-                { odds: undefined, stake: undefined },
-                { odds: undefined, stake: undefined },
-            ]
 
             const fix = number => Math.round(number * 100) / 100;
 
@@ -39,15 +35,20 @@ angular
                 mode: 'qualifier',
                 inplayBackOdds: 1.2,
                 earlyPayoutLockin: 100,
+                earlyPayoutPartBacks: [
+                    { odds: undefined, stake: undefined },
+                    { odds: undefined, stake: undefined },
+                ],
             };
 
             this.$onInit = () => {
                 window.electronAPI.onPostData((event, data) => {
                     console.log('Received from network:', data);
-                    this.backOdds = data.backOdds;
-                    this.layOdds = data.layOdds;
-                    this.commission = data.commission ?? this.commission;
-                    this.stake = data.stake ?? this.stake;
+                    const safeFloat = input => parseFloat((input || 0).toString());
+                    this.backOdds = safeFloat(data.backOdds);
+                    this.layOdds = safeFloat(data.layOdds);
+                    this.commission = safeFloat(data.commission ?? this.commission);
+                    this.stake = safeFloat(data.stake ?? this.stake);
                     this.recalculate();
                     $mdToast.showSimple(`Got new odds: ${data.backOdds} / ${data.layOdds}`);
                     $scope.$apply();
@@ -183,6 +184,7 @@ angular
                 dest.mode = source.mode;
                 dest.inplayBackOdds = source.inplayBackOdds;
                 dest.earlyPayoutLockin = source.earlyPayoutLockin;
+                dest.earlyPayoutPartBacks = source.earlyPayoutPartBacks.map(p => ({...p}));
             }
 
             this.addTab = () => {

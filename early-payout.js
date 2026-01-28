@@ -90,9 +90,6 @@ window.calculateEarlyPayout = function calculateEarlyPayout(
   let layWin = round(layStake * (1 - layCommission / 100));
   let layLoss = round(-layStake * (layOdds - 1));
 
-  const initialProfitLoss = backWin - liability;
-  const stakeToCoverInitialLoss = round(Math.abs(initialProfitLoss) / (inplayBackOdds - 1));
-
   // ---- Partial cashouts ----
   let partBackTotalStake = 0;
   let partBackTotalProfit = 0;
@@ -101,6 +98,9 @@ window.calculateEarlyPayout = function calculateEarlyPayout(
     partBackTotalStake += p.stake;
     partBackTotalProfit += p.stake * (p.odds - 1);
   }
+
+  const initialProfitLoss = backWin - liability + partBackTotalProfit;
+  const stakeToCoverInitialLoss = initialProfitLoss > 0 ? 0 : round(Math.abs(initialProfitLoss) / (inplayBackOdds - 1));
 
   // ---- Early payout ----
   let inplayBackStake = 0;
