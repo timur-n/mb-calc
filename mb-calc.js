@@ -19,7 +19,15 @@ angular
             this.stakes = [5, 10, 20, 25, 50, 100];
             this.tabs = [];
             this.selectedTab = 0;
-            this.lockins = ['0%', '100%', 'EV']
+            this.lockins = [
+                { text: 'Min', value: 0 },
+                { text: 'Max', value: 100 },
+                { text:'EV', value: undefined },
+            ]
+            this.earlyPayoutPartBacks = [
+                { odds: undefined, stake: undefined },
+                { odds: undefined, stake: undefined },
+            ]
 
             const fix = number => Math.round(number * 100) / 100;
 
@@ -222,13 +230,19 @@ angular
                             layOdds: this.layOdds,
                             layCommission: this.commission,
                             isPaidOut: true,
-                            paidOutBackOdds: oddsTable[i],
-                            lockinPercentage: this.earlyPayoutLockin / 100
+                            inplayBackOdds: oddsTable[i],
+                            lockinPercentage: (this.earlyPayoutLockin ?? 100) / 100,
+                            coverInitialLossOnly: this.earlyPayoutLockin === undefined,
+                            partBacks: this.earlyPayoutPartBacks.map(p => ({
+                                stake: p.stake,
+                                odds: p.odds,
+                            })).filter(p => p.stake && p.odds)
                         });
                         result.isCurrent = i === 5;
-                        result.paidOutBackOdds = oddsTable[i];
+                        result.isProfit = result.totalIfWins >= 0;
+                        result.inplayBackOdds = oddsTable[i];
                         if (result.isCurrent) {
-                            this.backStake = result.backStake;
+                            this.inplayBackStake = result.inplayBackStake;
                         }
                         this.results.push(result)
                     }
@@ -285,11 +299,22 @@ angular
             };
 
             this.selectEarlyPayout = result => {
-                mbClipboard.copy(result.paidOutBackStake);
-                this.inplayBackOdds = result.paidOutBackOdds;
+                mbClipboard.copy(result.inplayBackStake);
+                this.inplayBackOdds = result.inplayBackOdds;
                 this.recalculate();
-                $mdToast.showSimple(`Copied ${result.paidOutBackStake}`);
+                $mdToast.showSimple(`Copied ${result.inplayBackStake}`);
             };
+
+            this.updateLockin = lockin => {
+                this.earlyPayoutLockin = lockin.value;
+                this.recalculate();
+            };
+
+            this.clearPartBack = (partBack) => {
+                partBack.stake = undefined;
+                partBack.odds = undefined;
+                this.recalculate();
+            }
 
             this.copyDetails = () => {
                 const line = `${this.stake}\t${this.backOdds}\t${this.layOdds}\t${this.layStake}\t${this.commission}`;
@@ -300,3 +325,5 @@ angular
             this.addTab();
         }
     });
+
+    // todo: fit 2up into height and make only table scrollable

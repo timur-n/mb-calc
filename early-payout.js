@@ -16,14 +16,15 @@ export interface EarlyPayoutInput {
 
   // early payout
   isPaidOut: boolean;
-  paidOutBackOdds?: number;
+  inplayBackOdds?: number;
   backMaxPayout?: number;
 
   // partial cashouts
   partBacks?: PartBack[];
 
-  // slider value already normalised (0–1)
+  // Value in range 0–1
   lockinPercentage?: number;
+  coverInitialLossOnly?: boolean;
 }
 
 export interface EarlyPayoutOutput {
@@ -35,12 +36,18 @@ export interface EarlyPayoutOutput {
   layWin: number;
   layLoss: number;
 
-  paidOutBackStake: number;
-  paidOutBackWin: number;
-  paidOutBackLoss: number;
+  inplayBackStake: number;
+  inplayBackWin: number;
+  inplayBackLoss: number;
 
   totalProfitBack: number;
   totalProfitLay: number;
+
+  totalIfWins: number;
+  totalIfLoses: number;
+
+  initialProfitLoss: number;
+  stakeToCoverInitialLoss: number;
 }
 */
 (function() {
@@ -57,10 +64,11 @@ window.calculateEarlyPayout = function calculateEarlyPayout(
     layCommission,
     actualLayStake,
     isPaidOut,
-    paidOutBackOdds,
+    inplayBackOdds,
     backMaxPayout,
     partBacks = [],
-    lockinPercentage = 1
+    lockinPercentage = 1,
+    coverInitialLossOnly = false,
   } = input;
 
   // ---- Back bet ----
@@ -82,6 +90,9 @@ window.calculateEarlyPayout = function calculateEarlyPayout(
   let layWin = round(layStake * (1 - layCommission / 100));
   let layLoss = round(-layStake * (layOdds - 1));
 
+  const initialProfitLoss = backWin - liability;
+  const stakeToCoverInitialLoss = round(Math.abs(initialProfitLoss) / (inplayBackOdds - 1));
+
   // ---- Partial cashouts ----
   let partBackTotalStake = 0;
   let partBackTotalProfit = 0;
@@ -92,44 +103,40 @@ window.calculateEarlyPayout = function calculateEarlyPayout(
   }
 
   // ---- Early payout ----
-  let paidOutBackStake = 0;
-  let paidOutBackWin = 0;
-  let paidOutBackLoss = 0;
+  let inplayBackStake = 0;
+  let inplayBackWin = 0;
+  let inplayBackLoss = 0;
 
-  if (isPaidOut && paidOutBackOdds && paidOutBackOdds > 1) {
+  if (isPaidOut && inplayBackOdds && inplayBackOdds > 1) {
     let maxBackReturn = backStake * backOdds;
 
     if (backMaxPayout != null && backMaxPayout < maxBackReturn) {
       maxBackReturn = backMaxPayout;
     }
 
-    paidOutBackStake = round(
+    inplayBackStake = round(
       (
         maxBackReturn
         - backStake * backOdds
         + layStake * layOdds
         - partBackTotalStake
         - partBackTotalProfit
-      ) / paidOutBackOdds * lockinPercentage
+      ) / inplayBackOdds * lockinPercentage
     );
 
-    paidOutBackStake = Math.max(0, paidOutBackStake);
+    inplayBackStake = coverInitialLossOnly ? stakeToCoverInitialLoss : Math.max(0, inplayBackStake);
 
-    paidOutBackWin = round(
-      paidOutBackStake * (paidOutBackOdds - 1)
-    );
+    inplayBackWin = round(inplayBackStake * (inplayBackOdds - 1));
 
-    paidOutBackLoss = -paidOutBackStake;
+    inplayBackLoss = -inplayBackStake;
 
     layLoss = round(
       -layStake * (layOdds - 1)
       + partBackTotalProfit
-      + paidOutBackWin
+      + inplayBackWin
     );
 
-    layWin = round(
-      layStake - partBackTotalStake - paidOutBackStake
-    );
+    layWin = round(layStake - partBackTotalStake - inplayBackStake);
   }
 
   // ---- Commission adjustments (only if positive) ----
@@ -144,6 +151,8 @@ window.calculateEarlyPayout = function calculateEarlyPayout(
   // ---- Totals ----
   const totalProfitBack = round(backWin + layLoss);
   const totalProfitLay = round(layWin + backLoss);
+  const totalIfWins = round(backWin + layLoss);
+  const totalIfLoses = round(backWin + layWin);
 
   return {
     backWin,
@@ -152,11 +161,15 @@ window.calculateEarlyPayout = function calculateEarlyPayout(
     liability,
     layWin,
     layLoss,
-    paidOutBackStake,
-    paidOutBackWin,
-    paidOutBackLoss,
+    inplayBackStake,
+    inplayBackWin,
+    inplayBackLoss,
     totalProfitBack,
-    totalProfitLay
+    totalProfitLay,
+    totalIfWins,
+    totalIfLoses,
+    initialProfitLoss,
+    stakeToCoverInitialLoss,
   };
 }
 })();
