@@ -44,6 +44,10 @@ angular
             this.$onInit = () => {
                 window.electronAPI.onPostData((event, data) => {
                     console.log('Received from network:', data);
+                    // todo: add the received data to a new tab, currently it resets the previous tab - need to investigate
+                    // this.addTab();
+                    // $scope.$apply();
+
                     const safeFloat = input => parseFloat((input || 0).toString());
                     this.backOdds = safeFloat(data.backOdds);
                     this.layOdds = safeFloat(data.layOdds);

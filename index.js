@@ -9,11 +9,11 @@ const __dirname = path.dirname(__filename);
 
 // We can't get the clipboard object in preload script, so it will be handled by ipcRenderer.invoke()
 ipcMain.handle('copy-text', (_, text) => {
-  clipboard.writeText(text)
+    clipboard.writeText(text)
 })
 
 app.on('ready', () => {
-    const win = new BrowserWindow({
+    const browser = new BrowserWindow({
         width: app.isPackaged ? 350 : 1200,
         height: app.isPackaged ? 500 : 800,
         webPreferences: {
@@ -22,13 +22,13 @@ app.on('ready', () => {
             preload: path.join(__dirname, 'preload.cjs')
         }
     });
-    win.setMenu(null);
-    win.setAlwaysOnTop(true, "floating");
-    win.setVisibleOnAllWorkspaces(true);
-    win.setFullScreenable(false);
-    win.loadFile('index.html');
+    browser.setMenu(null);
+    browser.setAlwaysOnTop(true, "floating");
+    browser.setVisibleOnAllWorkspaces(true);
+    browser.setFullScreenable(false);
+    browser.loadFile('index.html');
     if (!app.isPackaged) {
-        win.webContents.openDevTools();
+        browser.webContents.openDevTools();
     }
 
     const server = express();
@@ -47,15 +47,19 @@ app.on('ready', () => {
 
     // Handle requests to set the new odds
     server.post('/data', (req, res) => {
-        if (!win.isDestroyed()) {
-            win.webContents.send('post-data', req.body);
+        if (!browser.isDestroyed()) {
+            browser.webContents.send('post-data', req.body);
+            if (browser?.isMinimized()) {
+                browser.restore();
+            }
+            browser.focus();
         }
         res.json({ status: 'ok' });
     });
 
     server.listen(4567, '127.0.0.1', () => {
         console.log('Server listening on http://127.0.0.1:4567');
-        win.setTitle(`mb-calc v${packageJson.version} : 4567`);
+        browser.setTitle(`mb-calc v${packageJson.version} : 4567`);
     });
 });
 

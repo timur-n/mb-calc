@@ -1,6 +1,6 @@
 {
   "name": "mb-calc",
-  "version": "2.0.22",
+  "version": "2.0.24",
   "description": "Lay odds calculator",
   "main": "index.js",
   "type": "module",
